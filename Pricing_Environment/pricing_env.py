@@ -42,28 +42,30 @@ class PricingEnvironment(gymnasium.Env):
 
     def step(self, action, external_market_demand):
         if not self.is_continuous:
-            # For discrete action space, map chosen action to price change
             if action in self.price_change_map:
                 price_change = self.price_change_map[action]
-                self.current_price = np.clip(self.current_price + price_change, self.min_price, self.max_price)
+                # Ensure that self.current_price is treated as a scalar
+                self.current_price = np.clip(self.current_price.item() + price_change, self.min_price, self.max_price)
             else:
                 raise ValueError(f"Invalid action provided for discrete setting: {action}")
         else:
-            # For continuous action space, directly set the current price to the action value
-            self.current_price = np.clip(action, self.min_price, self.max_price)
+            # If action is continuous but might be an array, take scalar value
+            action_value = action if np.isscalar(action) else action.item()
+            self.current_price = np.clip(action_value, self.min_price, self.max_price)
 
-        # Update current demand based on external market demand
+        # Update current demand
         self.market_demand = external_market_demand
         self.current_demand = self.demand_calculator.calculate_demand(self.current_price, external_market_demand)
 
+        print(f"Current Demand: {self.current_demand}, Type: {type(self.current_demand)}")
+        print(f"Current Price: {self.current_price}, Type: {type(self.current_price)}")
+
         reward = self.current_demand * self.current_price
         state = np.array([self.current_demand, self.current_price])
+
         done = False
-
         revenue = self.current_price * self.current_demand
-        # Record with revenue
         self.history.append((self.current_price, self.market_demand, self.current_demand, revenue))
-
         return state, reward, done, {}
 
     def reset(self):
