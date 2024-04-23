@@ -144,3 +144,61 @@ def visualise_ucb_confidence(ucb_agent):
     plt.xticks(actions)  # Ensure that each action is labeled with its index
     plt.grid(True)
     plt.show()
+
+
+
+
+def visualise_ucb_demand_rewards(num_episodes, total_market_demands, total_captured_demands, episode_rewards):
+    """
+    Visualizes total market demands, captured demands, and rewards per episode using a stacked bar plot and a line plot overlay.
+
+    Args:
+        num_episodes (int): Number of episodes.
+        total_market_demands (list or np.array): Total market demands per episode.
+        total_captured_demands (list or np.array): Total captured demands per episode.
+        episode_rewards (list or np.array): Total rewards per episode.
+    """
+    fig, ax1 = plt.subplots(figsize=(14, 7))
+
+    indices = np.arange(num_episodes)  # the label locations
+
+    # Convert lists to numpy arrays for element-wise operations
+    total_market_demands = np.array(total_market_demands)
+    total_captured_demands = np.array(total_captured_demands)
+
+    # Captured demands at the base
+    ax1.bar(indices, total_captured_demands, label='Total Captured Demand', color='blue', alpha=0.7)
+
+    # Remaining market demands calculated as the difference and plotted above captured demands
+    remaining_market_demands = total_market_demands - total_captured_demands
+    ax1.bar(indices, remaining_market_demands, label='Remaining Market Demand', color='gray', alpha=0.7, bottom=total_captured_demands)
+
+    ax1.set_xlabel('Episode')
+    ax1.set_ylabel('Demand')
+    ax1.set_title('Market and Captured Demand per Episode with Total Rewards')
+    ax1.legend(loc='upper left')
+
+    # Create a twin axis for the rewards line plot
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('Rewards')
+    ax2.plot(indices, episode_rewards, 'r-', label='Total Rewards')
+    ax2.legend(loc='upper right')
+
+    plt.show()
+
+
+
+def visualise_sac_test_rewards(test_rewards):
+    """
+    Visualizes the test rewards of the SAC agent over a series of episodes.
+
+    Args:
+    test_rewards (list of float): A list containing the total rewards obtained by the SAC agent in each test episode.
+    """
+    plt.figure(figsize=(12, 6))
+    plt.plot(test_rewards, marker='o', linestyle='-', color='blue')
+    plt.title('SAC Test Rewards Per Episode')
+    plt.xlabel('Episode')
+    plt.ylabel('Total Reward')
+    plt.grid(True)
+    plt.show()

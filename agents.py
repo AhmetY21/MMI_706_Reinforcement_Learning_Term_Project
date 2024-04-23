@@ -24,27 +24,26 @@ class QLearningAgent:
         td_error = td_target - self.q_table[state][action]
         self.q_table[state][action] += self.learning_rate * td_error
 
-# Definition of UCB Agent
 class UCB:
-    def __init__(self, n_actions):
+    def __init__(self, n_actions, exploration_coefficient=2):
         self.n_actions = n_actions
         self.action_counts = np.zeros(n_actions, dtype=int)
         self.total_rewards = np.zeros(n_actions, dtype=float)
-
+        self.exploration_coefficient = exploration_coefficient
+    
     def select_action(self):
         for action in range(self.n_actions):
             if self.action_counts[action] == 0:
                 return action
-        ucb_values = self.total_rewards / self.action_counts + np.sqrt(2 * np.log(sum(self.action_counts)) / self.action_counts)
-        return np.argmax(ucb_values)
+        total_counts = sum(self.action_counts)
+        ucb_values = self.total_rewards / self.action_counts + self.exploration_coefficient * np.sqrt(np.log(total_counts) / self.action_counts)
 
+        return np.argmax(ucb_values)
+    
     def update(self, action, reward):
         self.action_counts[action] += 1
         self.total_rewards[action] += reward
-
-
-import numpy as np
-
+        
 class MarkovDecisionProcess:
     def __init__(self, actions, epsilon=0.1):
         """
@@ -91,4 +90,44 @@ class MarkovDecisionProcess:
         total_prob = sum(self.actions.values())
         for act in self.actions:
             self.actions[act] /= total_prob
+class SARSA:
+    def __init__(self, state_size, action_size, learning_rate=0.1, discount_rate=0.95, exploration_rate=1.0, exploration_decay=0.99, min_exploration_rate=0.01):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.q_table = np.zeros((state_size, action_size))
+        self.learning_rate = learning_rate
+        self.discount_rate = discount_rate
+        self.exploration_rate = exploration_rate
+        self.exploration_decay = exploration_decay
+        self.min_exploration_rate = min_exploration_rate
+
+    def choose_action(self, state):
+        if np.random.rand() < self.exploration_rate:
+            return np.random.choice(range(self.action_size))
+        return np.argmax(self.q_table[state])
+
+    def update(self, state, action, reward, next_state, next_action, done):
+        # SARSA Update
+        td_target = reward + self.discount_rate * self.q_table[next_state][next_action] * (not done)
+        td_error = td_target - self.q_table[state][action]
+        self.q_table[state][action] += self.learning_rate * td_error
+
+def encode_state(market_demand, boundaries):
+    """
+    Encodes the market demand into a discrete state based on specified boundaries.
+
+    Args:
+        market_demand (float): The current market demand from the environment's state.
+        boundaries (list of floats): The boundaries between different demand bins. Should be sorted in ascending order.
+
+    Returns:
+        int: A discrete integer representing the encoded state. Returns the index of the bin into which the market demand falls.
+    """
+    # Iterate over the boundaries to determine the correct bin
+    for i, boundary in enumerate(boundaries):
+        if market_demand < boundary:
+            return i
+    # If the demand is greater than all boundaries, return the last bin index
+    return len(boundaries)
+
 

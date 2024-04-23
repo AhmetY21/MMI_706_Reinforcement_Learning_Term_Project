@@ -1,13 +1,13 @@
 import gymnasium
 from gymnasium import spaces
 from Pricing_Environment.demand_calculator import DemandDataGenerator,DemandCalculator
-from Pricing_Environment.action_strategy import ActionStrategy
+from agents import MarkovDecisionProcess
 import numpy as np
 
 class PricingEnvironment(gymnasium.Env):
     metadata = {'render_modes': ['text', 'rgb_array'], 'render_fps': 4}
 
-    
+    #.
     def __init__(self, product_config, demand_calculator_config, action_strategy_config, is_continuous=False, render_mode=None):
         super().__init__()
         self.min_price = product_config["min_price"]
@@ -20,7 +20,7 @@ class PricingEnvironment(gymnasium.Env):
         self.demand_calculator = DemandCalculator(demand_calculator_config["price_probability_ranges"])
         
         # Initialize the action strategy with its config
-        self.action_strategy = ActionStrategy(action_strategy_config["action_probabilities"])
+        self.action_strategy = MarkovDecisionProcess(action_strategy_config["action_probabilities"])
         self.price_change_map = action_strategy_config.get("price_change_map", {})
         
         # Action space definition based on whether actions are continuous or discrete
@@ -57,8 +57,8 @@ class PricingEnvironment(gymnasium.Env):
         self.market_demand = external_market_demand
         self.current_demand = self.demand_calculator.calculate_demand(self.current_price, external_market_demand)
 
-        print(f"Current Demand: {self.current_demand}, Type: {type(self.current_demand)}")
-        print(f"Current Price: {self.current_price}, Type: {type(self.current_price)}")
+        # print(f"Current Demand: {self.current_demand}, Type: {type(self.current_demand)}")
+        # print(f"Current Price: {self.current_price}, Type: {type(self.current_price)}")
 
         reward = self.current_demand * self.current_price
         state = np.array([self.current_demand, self.current_price])
