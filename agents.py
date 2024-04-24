@@ -17,12 +17,13 @@ class QLearningAgent:
         if np.random.rand() < self.exploration_rate:
             return np.random.choice(range(self.action_size))
         return np.argmax(self.q_table[state])
-
+    
     def update(self, state, action, reward, next_state, done):
-        best_next_action = np.argmax(self.q_table[next_state])
-        td_target = reward + self.discount_rate * self.q_table[next_state][best_next_action] * (not done)
-        td_error = td_target - self.q_table[state][action]
-        self.q_table[state][action] += self.learning_rate * td_error
+        old_value = self.q_table[state, action]
+        future_value = np.max(self.q_table[next_state]) if not done else 0
+        new_value = old_value + self.learning_rate * (reward + self.discount_rate * future_value - old_value)
+        self.q_table[state, action] = new_value
+
 
 class UCB:
     def __init__(self, n_actions, exploration_coefficient=2):
@@ -90,6 +91,8 @@ class MarkovDecisionProcess:
         total_prob = sum(self.actions.values())
         for act in self.actions:
             self.actions[act] /= total_prob
+
+
 class SARSA:
     def __init__(self, state_size, action_size, learning_rate=0.1, discount_rate=0.95, exploration_rate=1.0, exploration_decay=0.99, min_exploration_rate=0.01):
         self.state_size = state_size
@@ -105,12 +108,13 @@ class SARSA:
         if np.random.rand() < self.exploration_rate:
             return np.random.choice(range(self.action_size))
         return np.argmax(self.q_table[state])
-
+    
     def update(self, state, action, reward, next_state, next_action, done):
-        # SARSA Update
-        td_target = reward + self.discount_rate * self.q_table[next_state][next_action] * (not done)
-        td_error = td_target - self.q_table[state][action]
-        self.q_table[state][action] += self.learning_rate * td_error
+        old_value = self.q_table[state, action]
+        future_value = self.q_table[next_state][next_action] if not done else 0
+        new_value = old_value + self.learning_rate * (reward + self.discount_rate * future_value - old_value)
+        self.q_table[state, action] = new_value
+
 
 def encode_state(market_demand, boundaries):
     """

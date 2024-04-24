@@ -1,5 +1,10 @@
 import numpy as np
 
+import random
+random.seed(42)
+np.random.seed(42)
+
+
 class DemandDataGenerator:
     def __init__(self, low, high, steps, seasonality=False):
         """
