@@ -1,2 +1,0 @@
-# MMI_706_Reinforcement_Learning_Term_Project
-MMI_706_Reinforcement_Learning_Term_Project in Spring Semester in 2023-2024 Spring Semester in METU

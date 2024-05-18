@@ -122,6 +122,76 @@ def visualise_total_rewards_ucb(episode_rewards):
     plt.grid(True)
     plt.show()
 
+def visualise_rewards_and_prices(episode_rewards, offered_prices, rewards_title='Total Rewards Per Episode', prices_title='Average Offered Prices Per Episode'):
+    """
+    Visualizes the rewards and offered prices received in each episode on the same plot with dual y-axes.
+
+    Args:
+        episode_rewards (list): List of total rewards per episode.
+        offered_prices (list): List of offered prices for each episode.
+        rewards_title (str): Title for the rewards plot.
+        prices_title (str): Title for the offered prices plot.
+    """
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    
+    # Plotting the rewards on the primary y-axis
+    color = 'tab:blue'
+    ax1.set_xlabel('Episode')
+    ax1.set_ylabel(rewards_title, color=color)
+    ax1.plot(episode_rewards, marker='o', linestyle='-', color=color, label=rewards_title + ' (left axis)')
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.grid(True)
+    
+    # Creating a second y-axis for the offered prices
+    ax2 = ax1.twinx()  
+    color = 'tab:red'
+    ax2.set_ylabel(prices_title, color=color)  
+    ax2.plot(offered_prices, marker='x', linestyle='--', color=color, label=prices_title + ' (right axis)')
+    ax2.tick_params(axis='y', labelcolor=color)
+    
+    # Adding a title and legend
+    plt.title('Episode Rewards and Offered Prices')
+    fig.legend(loc='upper left', bbox_to_anchor=(0.1, 0.9))
+    
+    plt.show()
+
+
+
+def visualise_rewards(episode_rewards, title='Total Rewards Per Episode'):
+    """
+    Visualizes the rewards received in each episode.
+
+    Args:
+        episode_rewards (list): List of total rewards per episode.
+        title (str): Title of the plot.
+    """
+    plt.figure(figsize=(12, 6))
+    plt.plot(episode_rewards, marker='o', linestyle='-', color='b', label='Reward per Episode')
+    plt.title(title)
+    plt.xlabel('Episode')
+    plt.ylabel('Total Reward')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+def visualise_avg_offered_price(offered_prices, title='Average Offered Prices For Each Episode'):
+    """
+    Visualizes the rewards received in each episode.
+
+    Args:
+        offered_prices (list): List of offered prices of each episode.
+        title (str): Title of the plot.
+    """
+    plt.figure(figsize=(12, 6))
+    plt.plot(offered_prices, marker='o', linestyle='-', color='b', label='Offered Price of Each Episode')
+    plt.title(title)
+    plt.xlabel('Episode')
+    plt.ylabel('Average Offered Prices')
+    plt.grid(True)
+    plt.legend()
+    plt.show()
+
+
 def visualise_ucb_confidence(ucb_agent):
     """
     Visualizes the UCB confidence levels for each action.

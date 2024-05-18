@@ -1,94 +1,93 @@
 import numpy as np
-
 import random
+
 random.seed(42)
 np.random.seed(42)
 
-
 class DemandDataGenerator:
-    def __init__(self, low, high, steps, seasonality=False):
-        """
-        Initialize the demand data generator for a single set of steps.
-
-        Args:
-        low (int): The minimum demand value.
-        high (int): The maximum demand value.
-        steps (int): Number of time steps for which to generate data.
-        seasonality (bool): Whether to include seasonality in the demand data.
-        """
+    def __init__(self, low, high, steps, seasonality=False, seasonal_amplitude=10, seasonal_frequency=1, phase_shift=0):
         self.low = low
         self.high = high
         self.steps = steps
         self.seasonality = seasonality
+        self.seasonal_amplitude = seasonal_amplitude
+        self.seasonal_frequency = seasonal_frequency
+        self.phase_shift = phase_shift
 
     def generate(self):
-        """
-        Generates demand data based on initialized settings.
-
-        Returns:
-        np.array: Demand data for the defined number of steps.
-        """
         if self.seasonality:
-            # Generate seasonal data using a sinusoidal pattern
             t = np.linspace(0, 2 * np.pi, self.steps)
-            seasonal_effect = 10 * np.sin(t)
+            seasonal_effect = self.seasonal_amplitude * np.sin(self.seasonal_frequency * t + self.phase_shift)
             data = np.random.randint(self.low, self.high, self.steps) + seasonal_effect
         else:
             data = np.random.randint(self.low, self.high, self.steps)
         return data
 
-
 class DemandCalculator:
-    def __init__(self, price_probability_ranges, base_price=10, elasticity=-1.5):
-        """
-        Initialize the DemandCalculator with discrete price ranges, associated probabilities,
-        and parameters for continuous demand calculation using elasticity.
-
-        :param price_probability_ranges: A dictionary where keys are tuples representing discrete price ranges (min_price, max_price),
-                                         and values are probabilities associated with those ranges.
-        :param base_price: The reference price for elasticity calculations.
-        :param elasticity: The price elasticity of demand.
-        """
+    def __init__(self, price_probability_ranges, base_price=10, elasticity=-1.5, price_caps=None, cap_start_step=0):
         self.price_probability_ranges = price_probability_ranges
         self.base_price = base_price
         self.elasticity = elasticity
+        self.price_caps = price_caps
+        self.cap_start_step = cap_start_step
+
+    def _apply_price_caps(self, price, current_step):
+
+        if self.price_caps and current_step >= self.cap_start_step:
+            min_cap, max_cap = self.price_caps
+            return max(min(price, max_cap), min_cap)
+        return price
 
     def _calculate_demand_continuous(self, price, market_demand):
-        """
-        Calculate demand continuously based on price elasticity.
-
-        :param price: The current price of the product.
-        :param market_demand: The current market demand.
-        :return: The adjusted demand based on elasticity.
-        """
-        # Adjust the demand based on elasticity formula and market demand
         return market_demand * ((price / self.base_price) ** self.elasticity)
 
     def _calculate_demand_discrete(self, price, market_demand):
-        """
-        Calculate demand discretely based on predefined price ranges and probabilities.
-
-        :param price: The current price of the product.
-        :param market_demand: The current market demand.
-        :return: The adjusted demand based on the price segment's probability.
-        """
         for price_range, probability in self.price_probability_ranges.items():
             if price_range[0] <= price < price_range[1]:
                 return market_demand * probability
         return market_demand
-
-    def calculate_demand(self, price, market_demand, method="discrete"):
+    def effective_price(self,price,current_step):
+        return self._apply_price_caps(price, current_step)
+        
+    def calculate_demand(self, price, market_demand, competitor_price=None, method="discrete", is_monopoly=False, current_step=0):
         """
-        Calculate demand based on the method specified ('continuous' or 'discrete') and current market demand.
+        Calculate demand considering competitor's pricing unless operating as a monopoly. 
+        Apply price caps if they are set and the current step is beyond the cap start step.
 
-        :param price: The current price of the product.
-        :param market_demand: The current market demand.
-        :param method: The calculation method to use ('continuous' or 'discrete').
-        :return: The adjusted demand based on the selected method and market conditions.
+        :param price: The price set by our product.
+        :param market_demand: The total market demand.
+        :param competitor_price: The price set by a competitor.
+        :param method: The calculation method ('continuous' or 'discrete').
+        :param is_monopoly: Boolean indicating whether the market is a monopoly.
+        :param current_step: The current time step in the simulation.
+        :return: The adjusted demand considering competitor influence and price caps.
         """
+        effective_price = self._apply_price_caps(price, current_step)
+        effective_competitor_price = self._apply_price_caps(competitor_price, current_step)
+
+        if is_monopoly:
+            if method == "continuous":
+                return self._calculate_demand_continuous(effective_price, market_demand)
+            elif method == "discrete":
+                return self._calculate_demand_discrete(effective_price, market_demand)
+            else:
+                raise ValueError("Invalid method specified. Use 'continuous' or 'discrete'.")
+
         if method == "continuous":
-            return self._calculate_demand_continuous(price, market_demand)
+            demand = self._calculate_demand_continuous(effective_price, market_demand)
         elif method == "discrete":
-            return self._calculate_demand_discrete(price, market_demand)
+            demand = self._calculate_demand_discrete(effective_price, market_demand)
         else:
             raise ValueError("Invalid method specified. Use 'continuous' or 'discrete'.")
+
+        if effective_competitor_price < effective_price:
+            competitor_demand = self._calculate_demand_continuous(effective_competitor_price, market_demand) if method == "continuous" \
+                else self._calculate_demand_discrete(effective_competitor_price, market_demand)
+            demand -= competitor_demand
+        elif effective_competitor_price == effective_price:
+            demand *= 0.5
+        elif effective_competitor_price > effective_price:
+            ratio = effective_price / effective_competitor_price
+            demand *= (1 - ratio)
+
+        return max(demand, 0)  # Ensure demand does not go negative
